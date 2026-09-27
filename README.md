@@ -9,6 +9,8 @@ The wire is never a hand-drawn stroke — it is the fractal's own
 self-similar structure, so the picture keeps revealing new lace at every
 zoom level.
 
+Colors are drawn from your current theme.
+
 <p align="center">
   <img src="docs/hero-seahorse-d2.jpg" alt="Filigree running as a 4K wallpaper — Seahorse Valley at detail 2" width="900">
 </p>
