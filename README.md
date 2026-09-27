@@ -17,6 +17,13 @@ Colors are drawn from your current theme.
 
 <p align="center"><em>The wallpaper on a real 4K display: Seahorse Valley, detail&nbsp;2 (satin).</em></p>
 
+<p align="center">
+  <img src="docs/studio.jpg" alt="The Filigree studio — the live settings panel" width="640">
+</p>
+
+<p align="center"><em>The studio — every setting is live: composition, motion, the gold wire,
+and <a href="#current-version">finest detail</a> (satin), previewed against a real-time render.</em></p>
+
 ## Current version
 
 **3.4.0** — adds *Finest detail*: lace finer than a pixel you choose is lit
