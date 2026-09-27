@@ -1,0 +1,12 @@
+# Local test machinery — never published.
+scratch/
+
+# Build/interpreter detritus
+venv/
+*.o
+*.pyc
+__pycache__/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

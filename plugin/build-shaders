@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+plugin_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+shader_baker=${QSB:-/usr/lib/qt6/bin/qsb}
+[[ -x $shader_baker ]] || { printf 'Qt shader baker not found: %s\n' "$shader_baker" >&2; exit 1; }
+# Custom equations are compiled from fractal.frag itself, with CUSTOM_EQUATION
+# defined (#version has to stay the first line).
+{
+  sed -n 1p "$plugin_dir/fractal.frag"
+  printf '#define CUSTOM_EQUATION\n'
+  sed 1d "$plugin_dir/fractal.frag"
+} > "$plugin_dir/fractal-template.glsl"
+for shader in "$plugin_dir"/*.frag; do
+  [[ $(basename -- "$shader") == satin.frag ]] && continue
+  "$shader_baker" --glsl '100 es,120,150' --hlsl 50 --msl 12 -o "$shader.qsb" "$shader"
+done
+# The diving surface and the satin filter fetch single texels, which needs
+# GLSL 1.50 / ES 3.0.
+"$shader_baker" --glsl '150,300 es' --hlsl 50 --msl 12 -o "$plugin_dir/satin.frag.qsb" "$plugin_dir/satin.frag"
+"$shader_baker" -D DIVE --glsl '150,300 es' --hlsl 50 --msl 12 -o "$plugin_dir/surface-dive.frag.qsb" "$plugin_dir/surface.frag"
+"$shader_baker" -D DIVE -D BLEND --glsl '150,300 es' --hlsl 50 --msl 12 -o "$plugin_dir/surface-blend.frag.qsb" "$plugin_dir/surface.frag"
+"$shader_baker" -D DIVE -D BLEND -D DISSOLVE --glsl '150,300 es' --hlsl 50 --msl 12 -o "$plugin_dir/surface-dissolve.frag.qsb" "$plugin_dir/surface.frag"
+"$shader_baker" -D DIVE -D STRETCH --glsl '150,300 es' --hlsl 50 --msl 12 -o "$plugin_dir/surface-stretch.frag.qsb" "$plugin_dir/surface.frag"
+printf 'Shaders rebuilt. Run omarchy restart shell to load the new shader binaries.\n'

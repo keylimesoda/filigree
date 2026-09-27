@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+# Control Filigree through the native Omarchy shell plugin IPC.
+set -euo pipefail
+
+fail() {
+  printf 'omarchy-fractal: %s\n' "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'USAGE'
+Usage: omarchy-fractal COMMAND
+
+  on                    Enable the Filigree wallpaper
+  off                   Restore the standard Omarchy wallpaper
+  pause                 Freeze the current animation
+  resume                Resume the animation
+  toggle                Toggle animation pause
+  status                Print the current state as JSON
+  set KEY VALUE         Save one setting (see below)
+  preset NAME           Apply a curated composition
+  equation "EXPR"       Compile and apply a custom iteration equation
+  settings              Open the studio panel, switching Filigree on if needed
+  capture PATH          Save a wallpaper-only PNG at PATH
+
+Settings:
+  paused        true | false
+  motion        0..1          default 0.55
+  speed         0.1..8        default 1.0 (scales every motion)
+  zoom          0..3          default 1 (dive speed; 0 holds the view still)
+  colorCycle    0..1          default 0 (palette tint flowing along the grooves)
+  intensity     0.1..1.5      default 1.0 (low: a few muted colours; high: many vivid ones)
+  wire          0.5..2        default 1.0 (weight of the gold wire)
+  detail        1..4          default 2 (finest detail in px; finer lace is lit as a satin sheen)
+  fps           1..30         default 30 (integer; a cap, the rate adapts to the motion)
+  maxDimension  960..3840     default 3840 (integer)
+  idlePause     30..3600      default 120 seconds (integer)
+  preset        filigree | seahorse | julia | mandelbrot | trinity
+  equation      e.g. "z^3+c", "abs2(z)*abs2(z)+c"
+  julia         true | false
+  juliaReal     -2..2         default -0.8
+  juliaImag     -2..2         default 0.156
+  centerX       -3..3         default -0.10469636
+  centerY       -3..3         default 0.95868651
+  span          0.002..5      default 0.03 (height of the shorter screen side)
+  focusX        -1..1         default 0.12 (dive and vignette centre, shorter-side units)
+  focusY        -1..1         default -0.08
+  iterations    80..5000      default 1500 (integer)
+  colorMode     0..3          default 0 (0 theme, 1 iridescent, 2 duotone, 3 platinum)
+  density       0.2..2.5      default 1.0 (engraving density)
+
+Presets write their own composition (view, plane, equation); motion, speed,
+zoom, colour cycle, frame rate, intensity and idle policy are kept as you set
+them. Settings survive `off` and `on`.
+
+Zoom: filigree, seahorse, julia and mandelbrot are focused on points where the
+fractal repeats itself at every scale, so they dive forever (mandelbrot starts
+from the whole set and tours down into the seahorse valley). Any other view
+sinks 3x deeper, then dissolves back to where it began.
+
+Equations use z (the orbit), c (the parameter), i and pi; + - * / ^ and
+parentheses; sin, cos, exp, conj, abs (modulus), abs2 (per component),
+re, im and complex(r, i). Example:
+  omarchy-fractal equation "z^3 + c"
+
+Examples:
+  omarchy-fractal set motion 0.3
+  omarchy-fractal set speed 3
+  omarchy-fractal set zoom 1
+  omarchy-fractal set colorCycle 0.5
+  omarchy-fractal set wire 1.4
+  omarchy-fractal set detail 3
+  omarchy-fractal set fps 10
+  omarchy-fractal preset julia
+  omarchy-fractal settings
+  omarchy-fractal capture "$HOME/Pictures/filigree.png"
+USAGE
+}
+
+json_call() {
+  local response
+  response=$(omarchy-shell fractal "$@") || return
+  printf '%s\n' "$response"
+  jq -e 'type == "object" and (.error == null)' <<<"$response" >/dev/null \
+    || fail 'the wallpaper reported an error; see the response above'
+}
+
+filigree_enabled() {
+  omarchy plugin list --json \
+    | jq -e 'any(.[]; .id == "ric.background" and .enabled == true)' >/dev/null
+}
+
+setting_json() {
+  local key=$1 value=$2 minimum maximum integer=false numeric
+  case "$key" in
+    paused|julia)
+      [[ $value == true || $value == false ]] || fail "$key must be true or false"
+      jq -cn --arg key "$key" --argjson value "$value" '{($key): $value}'
+      return
+      ;;
+    motion) minimum=0; maximum=1 ;;
+    speed) minimum=0.1; maximum=8 ;;
+    zoom) minimum=0; maximum=3 ;;
+    colorCycle) minimum=0; maximum=1 ;;
+    intensity) minimum=0.1; maximum=1.5 ;;
+    wire) minimum=0.5; maximum=2 ;;
+    detail) minimum=1; maximum=4 ;;
+    fps) minimum=1; maximum=30; integer=true ;;
+    maxDimension) minimum=960; maximum=3840; integer=true ;;
+    idlePause) minimum=30; maximum=3600; integer=true ;;
+    juliaReal) minimum=-2; maximum=2 ;;
+    juliaImag) minimum=-2; maximum=2 ;;
+    centerX) minimum=-3; maximum=3 ;;
+    centerY) minimum=-3; maximum=3 ;;
+    span) minimum=0.002; maximum=5 ;;
+    focusX) minimum=-1; maximum=1 ;;
+    focusY) minimum=-1; maximum=1 ;;
+    iterations) minimum=80; maximum=5000; integer=true ;;
+    colorMode) minimum=0; maximum=3; integer=true ;;
+    density) minimum=0.2; maximum=2.5 ;;
+    *) fail "unknown setting: $key (see --help)" ;;
+  esac
+
+  [[ $value =~ ^-?([0-9]+([.][0-9]+)?|[.][0-9]+)$ ]] \
+    || fail "$key must be a number between $minimum and $maximum"
+  numeric=$(jq -cn --arg value "$value" '$value | tonumber')
+  jq -en --argjson value "$numeric" --argjson minimum "$minimum" \
+    --argjson maximum "$maximum" --argjson integer "$integer" \
+    '$value >= $minimum and $value <= $maximum and
+      ($integer == false or ($value | floor) == $value)' >/dev/null \
+    || fail "$key must be between $minimum and $maximum; integer settings require whole numbers"
+  jq -cn --arg key "$key" --argjson value "$numeric" '{($key): $value}'
+}
+
+PRESET_NAMES="filigree seahorse julia mandelbrot trinity"
+
+action=${1:-help}
+case "$action" in
+  help|-h|--help)
+    usage
+    ;;
+  on|off)
+    [[ $# == 1 ]] || fail "$action takes no arguments"
+    if [[ $action == on ]]; then
+      omarchy plugin enable ric.background
+    else
+      omarchy plugin enable omarchy.background
+    fi
+    ;;
+  pause|resume|toggle)
+    [[ $# == 1 ]] || fail "$action takes no arguments"
+    json_call "$action"
+    ;;
+  status)
+    [[ $# == 1 ]] || fail 'status takes no arguments'
+    if filigree_enabled; then
+      json_call status
+    else
+      printf '%s\n' '{"plugin":"ric.background","enabled":false}'
+    fi
+    ;;
+  set)
+    [[ $# == 3 ]] || fail 'set requires a setting name and a value'
+    options=$(setting_json "$2" "$3")
+    json_call configure "$options"
+    ;;
+  preset)
+    [[ $# == 2 && -n ${2:-} ]] || fail "preset requires one of: $PRESET_NAMES"
+    name=$2
+    known=false
+    for preset_name in $PRESET_NAMES; do
+      [[ $name == "$preset_name" ]] && known=true
+    done
+    [[ $known == true ]] || fail "unknown preset: $name (one of: $PRESET_NAMES)"
+    options=$(jq -cn --arg name "$name" '{preset: $name}')
+    json_call configure "$options"
+    ;;
+  equation)
+    [[ $# == 2 && -n ${2:-} ]] || fail 'equation requires an expression, e.g. "z^3 + c"'
+    expression=$2
+    response=$(omarchy-shell fractal applyEquation "$expression")
+    [[ $response == error* ]] && fail "$response"
+    printf 'compiling %s\n' "$expression"
+    deadline=$((SECONDS + 30))
+    while (( SECONDS < deadline )); do
+      state=$(OMARCHY_SHELL_IPC_TIMEOUT=1s omarchy-shell fractal status \
+        || fail 'the shell stopped responding while compiling')
+      busy=$(jq -r '.equationBusy' <<<"$state")
+      if [[ $busy != true ]]; then
+        error=$(jq -r '.equationError // empty' <<<"$state")
+        [[ -z $error ]] || fail "$error"
+        printf 'applied: equation=%s\n' "$(jq -r '.equation' <<<"$state")"
+        exit 0
+      fi
+      sleep 0.25
+    done
+    fail 'equation compilation did not finish after 30 seconds'
+    ;;
+  settings)
+    [[ $# == 1 ]] || fail 'settings takes no arguments'
+    # A disabled plugin has no panel to open, so choosing the studio switches
+    # Filigree on first. The shell queues the summon until the panel mounts.
+    filigree_enabled || omarchy plugin enable ric.background
+    response=$(omarchy-shell shell summon ric.background '{}')
+    [[ $response == ok ]] || fail "the shell could not open the studio ($response)"
+    printf 'opened\n'
+    ;;
+  capture)
+    [[ $# == 2 && -n $2 ]] || fail 'capture requires a PNG file path'
+    capture_path=$2
+    [[ $capture_path == /* ]] || capture_path=$PWD/$capture_path
+    [[ $capture_path == *.png || $capture_path == *.PNG ]] || fail 'capture path must end in .png'
+    [[ -d ${capture_path%/*} ]] || fail 'capture directory does not exist'
+    response=$(omarchy-shell fractal capture "$capture_path")
+    [[ $response == requested ]] || fail "$response"
+    capture_deadline=$((SECONDS + 15))
+    while (( SECONDS < capture_deadline )); do
+      capture_state=$(OMARCHY_SHELL_IPC_TIMEOUT=1s omarchy-shell fractal status) \
+        || fail 'the shell stopped responding while capturing'
+      capture_error=$(jq -r '.captureError // empty' <<<"$capture_state")
+      [[ -z $capture_error ]] || fail "$capture_error"
+      if jq -e --arg path "$capture_path" '.capturePath == $path' <<<"$capture_state" >/dev/null; then
+        printf '%s\n' "$capture_path"
+        exit 0
+      fi
+      sleep 0.25
+    done
+    fail 'capture has not completed after 15 seconds; check omarchy-fractal status'
+    ;;
+  *)
+    fail "unknown command: $action (use --help)"
+    ;;
+esac
