@@ -9,6 +9,12 @@ The wire is never a hand-drawn stroke — it is the fractal's own
 self-similar structure, so the picture keeps revealing new lace at every
 zoom level.
 
+<p align="center">
+  <img src="docs/hero-seahorse-d2.jpg" alt="Filigree running as a 4K wallpaper — Seahorse Valley at detail 2" width="900">
+</p>
+
+<p align="center"><em>The wallpaper on a real 4K display: Seahorse Valley, detail&nbsp;2 (satin).</em></p>
+
 ## Current version
 
 **3.4.0** — adds *Finest detail*: lace finer than a pixel you choose is lit
@@ -22,6 +28,35 @@ instead of crawling.
   user-facing `plugin/README.md`.
 - `HANDOFF.md` — engineering log: architecture notes, calibration history,
   and the measured costs/benefits of each feature.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%">
+  <img src="docs/trinity-z3c-d2.jpg" alt="Trinity (z cubed plus c), mid-blend transition, detail 2" width="600"><br>
+  <em>Trinity (z³ + c) mid-blend — the fractal cross-fades to the next zoom level — detail&nbsp;2.</em>
+</td>
+<td width="50%">
+  <img src="docs/trinity-dissolve-d4.jpg" alt="Trinity zoom dissolve at detail 4" width="600"><br>
+  <em>Zoom dissolve, detail&nbsp;4 — the outgoing view dissolves as the fractal rolls over to finer lace.</em>
+</td>
+</tr>
+<tr>
+<td width="33%">
+  <img src="docs/preset-julia.jpg" alt="Julia lace preset" width="400"><br>
+  <em>Julia lace preset (3.3.0 render, pre-satin).</em>
+</td>
+<td width="33%">
+  <img src="docs/preset-mandelbrot.jpg" alt="Mandelbrot atlas preset" width="400"><br>
+  <em>Mandelbrot atlas preset (3.3.0 render, pre-satin).</em>
+</td>
+<td width="33%">
+  <img src="docs/portrait-d4.jpg" alt="Portrait-orientation display at detail 4" width="300"><br>
+  <em>Portrait-orientation display, detail&nbsp;4.</em>
+</td>
+</tr>
+</table>
 
 ## Installing
 
