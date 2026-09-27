@@ -644,3 +644,34 @@ MOTION=0.8 ZOOM=0 ./render.sh …                                      # non-div
 4. **The 15-px texel-switch grid lines** from nearest-texel lookups (§6.1)
    remain. A future fix would need a linearly filterable encoding of the
    angle and trust inputs, without adding per-frame fetches.
+
+## 12. To do (not started — recorded 2026-09-26, user request)
+
+1. **Infinite zoom instead of the loop.** Replace the fixed
+   `loopScale`/`loopSteps` dive (which repeats via `loopEntry`/`loopTurn`/
+   `loopPhase` self-similarity or a `dissolving` cross-dissolve back to the
+   start) with one unbounded descent: a rolling keyframe window that bakes
+   the next level on demand and retires the oldest. Facts for whoever picks
+   this up:
+   - Dive rate: `level = zoomTime·0.003/ln(stepScale)` — at the user's
+     zoom 2 on trinity (stepScale 1.1471) one level takes ≈ 23 s, so at
+     their `speed` 0.1 the on-demand bake budget is generous; the existing
+     `roles` fallback already holds the screen on the nearest bake if a
+     bake lags.
+   - The satin prefilter follows the bakes (recomposes per band), so a
+     rolling window needs no satin changes.
+   - Hard limit: bakes are fp32. As `keySpan = span/stepScale^k` shrinks
+     (≈ 1e-5 and below) the structure degrades to noise, so true infinity
+     is not numerically available in the current shader — "infinite" in
+     practice means descend to the precision limit and roll over gracefully
+     (or a fp64/renormalisation redesign, which is a much bigger job).
+   - Likely a new `zoomLoop` mode (presets keep their loops); studio,
+     CLI and README follow.
+2. **Default animation feel.** The user's preferred motion is
+   `motion 0.19` / `speed 0.1` — at or near the bottom of the current
+   ranges (`motion 0..1` default 0.55; `speed 0.1..8` default 1.0). Decide
+   with the user: (a) lower the factory defaults so a fresh install lands in
+   that meditative zone (their saved settings unaffected), or (b) remap the
+   speed slider non-linearly so mid-slider feels like their zone — which
+   changes the meaning of stored values and needs a migration decision for
+   the user's live settings.
