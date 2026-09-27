@@ -12,10 +12,10 @@ zoom level.
 Colors are drawn from your current theme.
 
 <p align="center">
-  <img src="docs/hero-seahorse-d2.jpg" alt="Filigree running as a 4K wallpaper — Seahorse Valley at detail 2" width="900">
+  <img src="docs/hero-4k.jpg" alt="Filigree running as a 4K wallpaper" width="900">
 </p>
 
-<p align="center"><em>The wallpaper on a real 4K display: Seahorse Valley, detail&nbsp;2 (satin).</em></p>
+<p align="center"><em>Filigree on a real 4K display.</em></p>
 
 <p align="center">
   <img src="docs/studio.jpg" alt="The Filigree studio — the live settings panel" width="640">
@@ -61,8 +61,8 @@ instead of crawling.
   <em>Mandelbrot atlas preset (3.3.0 render, pre-satin).</em>
 </td>
 <td width="33%">
-  <img src="docs/portrait-d4.jpg" alt="Portrait-orientation display at detail 4" width="300"><br>
-  <em>Portrait-orientation display, detail&nbsp;4.</em>
+  <img src="docs/portrait-dp3.jpg" alt="Filigree on a portrait-orientation display" width="300"><br>
+  <em>Portrait-orientation display.</em>
 </td>
 </tr>
 </table>
