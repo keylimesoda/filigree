@@ -12,8 +12,12 @@ shader_baker=${QSB:-/usr/lib/qt6/bin/qsb}
 } > "$plugin_dir/fractal-template.glsl"
 for shader in "$plugin_dir"/*.frag; do
   [[ $(basename -- "$shader") == satin.frag ]] && continue
+  [[ $(basename -- "$shader") == fractal-fp64.frag ]] && continue
   "$shader_baker" --glsl '100 es,120,150' --hlsl 50 --msl 12 -o "$shader.qsb" "$shader"
 done
+# The descent bake is float64, which needs GLSL 1.50 (100 es and 120 have no
+# float64); the desktop bake context is 4.40, so 150 covers it.
+"$shader_baker" --glsl 150 --hlsl 50 --msl 12 -o "$plugin_dir/fractal-fp64.frag.qsb" "$plugin_dir/fractal-fp64.frag"
 # The diving surface and the satin filter fetch single texels, which needs
 # GLSL 1.50 / ES 3.0.
 "$shader_baker" --glsl '150,300 es' --hlsl 50 --msl 12 -o "$plugin_dir/satin.frag.qsb" "$plugin_dir/satin.frag"

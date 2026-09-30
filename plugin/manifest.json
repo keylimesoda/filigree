@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "ric.background",
   "name": "Filigree",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "author": "Ric",
-  "description": "A fractal engraved like a guilloché watch dial and lit by slowly orbiting lights in the current theme palette, dense lace lit as a satin sheen instead of one-pixel glints, sinking in an endless, seamless dive into a self-similar point with slow colour cycling, plus a studio panel for motion, composition, color, and custom iteration equations.",
+  "description": "A fractal engraved like a guilloché watch dial and lit by slowly orbiting lights in the current theme palette, dense lace lit as a satin sheen instead of one-pixel glints, sinking in an endless, seamless dive into a self-similar point — or, about any other view, a true float64 descent that keeps revealing new structure — with slow colour cycling, plus a studio panel for motion, composition, color, and custom iteration equations.",
   "kinds": [
     "service",
     "panel"

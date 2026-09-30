@@ -11,16 +11,22 @@ confirm before editing.
 
 | | State |
 |---|---|
-| **Deployed** (`~/.config/omarchy/plugins/ric.background/`) | **3.3.0**, stable, running live on both displays |
-| **Dev** (`/home/ric/Work/filigree/plugin/`) | 3.3.0 **plus in-progress 3.4.0 "Finest detail" (satin prefilter)**; `manifest.json` still says 3.3.0 |
-| Satin engine (shaders + `Fractal.qml`) | Implemented, calibrated, verified offscreen |
-| Setting plumbing (Background/Studio/CLI/README/manifest) | **Not started** |
-| Deploy of 3.4.0 | **Not done** |
+| **Deployed** (`~/.config/omarchy/plugins/ric.background/`) | **3.5.0**, stable, running live on both displays |
+| **Dev** (`/home/ric/Work/filigree/plugin/`) | **3.5.0**, in sync with deployed |
+| Satin "Finest detail" (3.4.0) | Deployed and running |
+| Float64 descent (3.5.0) | Deployed and running; design + measurements in `scratch/infinite-zoom-spec.md` |
 
-- The in-flight change is saved as a patch against the deployed 3.3.0 (excluding
-  `.qsb` binaries): `scratch/satin-harness/satin-3.4.0-wip.diff`. It touches
-  4 files: `build-shaders`, `Fractal.qml`, `satin.frag` (new) and `surface.frag`.
-- Next actions: **§7**.
+- 3.4.0 "Finest detail" (satin prefilter) is deployed and running.
+- 3.5.0 "Infinite descent": non-self-similar (dissolve) views now descend
+  unboundedly in float64 instead of cross-dissolving back. Misiurewicz points
+  keep their float32 self-similar reuse, unchanged. The descent bake is ~2x
+  cheaper per frame than the float32 bake (the fp64 is clean plain iteration;
+  the fp32 always carries the ORBIT/perturb overhead). The float64 wall is
+  ~1e-10 vs the float32 plain-iteration wall ~1e-9 (the chaotic 1500-iter
+  error grows exponentially, so the wall is set by accumulated error, not raw
+  precision). See `scratch/infinite-zoom-spec.md` for the design, the two-float
+  focus path, and the full measurements.
+- Backup of the pre-descent 3.4.0 deploy: `scratch/backup-3.4.0-20260930/`.
 
 ---
 

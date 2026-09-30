@@ -63,6 +63,9 @@ Item {
   property int loopSteps: 8
   property int loopEntry: 0
   property bool dissolve: true
+  // The non-self-similar descent: a plain focus followed in float64, so the
+  // dive keeps revealing new structure instead of cross-dissolving back.
+  property bool descent: false
   // Perturbation: the dive point and where its exact orbit sits in the bake
   // shader's ORBIT table (written by divepoints.py).
   property bool reference: false
@@ -76,6 +79,9 @@ Item {
   property real orbitTime: 0
   property bool customEquation: false
   property url shaderUrl: Qt.resolvedUrl("fractal.frag.qsb")
+  // The float64 bake for the descent; a plain focus is iterated in dvec2 so
+  // the dive holds past the float32 wall.
+  property url shaderUrl64: Qt.resolvedUrl("fractal-fp64.frag.qsb")
   // Frame-rate cap. The wallpaper only draws as often as its motion needs.
   property int fps: 30
   property int maxDimension: 3840
@@ -435,7 +441,7 @@ Item {
   readonly property int entrySteps: Math.max(0, loopEntry) * steps
   function loopOf(k) { return k < entrySteps + steps ? 0 : Math.floor((k - entrySteps) / steps) }
   function stepIn(k) { return k - loopOf(k) * steps }
-  function keySpan(k) { return k === noKey ? span : span / Math.pow(stepScale, stepIn(k)) }
+  function keySpan(k) { return k === noKey ? span : span / Math.pow(stepScale, descent ? k : stepIn(k)) }
   function keyAngle(k) { return k === noKey ? 0 : loopTurn * stepIn(k) / steps }
   function keyTurn(k) {
     const a = keyAngle(k)
@@ -597,8 +603,13 @@ Item {
   // Everything a bake of keyframe k needs, as the settings are now.
   function snapshot(k) {
     const job = geometry(k)
-    const bands = Math.max(1, Math.min(bandLimit, Math.floor(keyHeight / bandMinRows),
-                                       Math.ceil(keyWidth * keyHeight / bandTexels)))
+    // The float64 descent bake costs ~1.45x the float32 one, so it is spread
+    // over more, thinner bands to keep its per-frame slice at or below the
+    // float32 bake's.
+    const bandTexelsFor = descent ? 80000 : bandTexels
+    const bandLimitFor = descent ? 96 : bandLimit
+    const bands = Math.max(1, Math.min(bandLimitFor, Math.floor(keyHeight / bandMinRows),
+                                       Math.ceil(keyWidth * keyHeight / bandTexelsFor)))
     job.bandRows = Math.ceil(keyHeight / bands)
     job.bands = Math.ceil(keyHeight / job.bandRows)
     job.key = k
@@ -606,6 +617,15 @@ Item {
     job.resolution = Qt.vector2d(keyWidth, keyHeight)
     job.frame = Qt.vector2d(bakeWidth, bakeHeight)
     job.center = Qt.vector2d(bakeCenterX, bakeCenterY)
+    // The focus and the Julia constant as high+low float32 splits, so the
+    // float64 bake holds them to full precision (QML carries doubles; the
+    // split is exact). Unused by the float32 bake.
+    job.centerHigh = Qt.vector2d(Math.fround(bakeCenterX), Math.fround(bakeCenterY))
+    job.centerLow = Qt.vector2d(bakeCenterX - Math.fround(bakeCenterX),
+                                bakeCenterY - Math.fround(bakeCenterY))
+    job.juliaConstantHigh = Qt.vector2d(Math.fround(juliaReal), Math.fround(juliaImag))
+    job.juliaConstantLow = Qt.vector2d(juliaReal - Math.fround(juliaReal),
+                                       juliaImag - Math.fround(juliaImag))
     job.anchor = Qt.vector2d(bakeAnchor.x, bakeAnchor.y)
     job.turn = keyTurn(k)
     job.juliaConstant = Qt.vector2d(juliaReal, juliaImag)
@@ -622,7 +642,7 @@ Item {
     job.refStart = orbitStart
     job.refPre = orbitPre
     job.refPeriod = orbitPeriod
-    job.shader = shaderUrl
+    job.shader = (descent && !customEquation) ? shaderUrl64 : shaderUrl
     return job
   }
   // Asks for the next piece of baking: a band, or the composition of a
@@ -798,7 +818,8 @@ Item {
       anchor: Qt.vector2d(0, 0), turn: Qt.vector2d(1, 0), juliaConstant: Qt.vector2d(0, 0),
       refOffset: Qt.vector2d(0, 0), span: 1, juliaMode: 0, iterationLimit: 1, samples: 1,
       wire: 0.002, fibreLevel: 0, metalCut: 0, spacing: 0.004, refMode: 0, refStart: 0, refPre: 0,
-      refPeriod: 1, shader: ""})
+      refPeriod: 1, centerHigh: Qt.vector2d(0, 0), centerLow: Qt.vector2d(0, 0),
+      juliaConstantHigh: Qt.vector2d(0, 0), juliaConstantLow: Qt.vector2d(0, 0), shader: ""})
     property bool working: false
     property int nextBand: 0
     // The band asked for and not yet rendered, and whether the composition is.
@@ -949,6 +970,10 @@ Item {
       property real refStart: slot.job.refStart
       property real refPre: slot.job.refPre
       property real refPeriod: slot.job.refPeriod
+      property vector2d centerHigh: slot.job.centerHigh
+      property vector2d centerLow: slot.job.centerLow
+      property vector2d juliaConstantHigh: slot.job.juliaConstantHigh
+      property vector2d juliaConstantLow: slot.job.juliaConstantLow
       fragmentShader: slot.job.shader !== "" ? slot.job.shader : slot.fractal ? slot.fractal.shaderUrl : ""
       onStatusChanged: {
         if (slot.fractal) slot.fractal.refresh()

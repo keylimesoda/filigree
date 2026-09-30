@@ -143,7 +143,7 @@ Item {
           orbitPeriod: d.orbitPeriod, focusX: (d.x - v.centerX) / v.span, focusY: (d.y - v.centerY) / v.span}
       }
     }
-    return {mode: "dissolve", dissolve: true, scale: 3, turn: 0, phase: 0, steps: 8, entry: 0, depth: 0,
+    return {mode: "descent", dissolve: false, scale: 3, turn: 0, phase: 0, steps: 8, entry: 0, depth: 0,
       reference: false, x: 0, y: 0, orbitStart: 0, orbitPre: 0, orbitPeriod: 1, focusX: v.focusX, focusY: v.focusY}
   }
 
@@ -265,7 +265,7 @@ Item {
         animating: panel.fractal.animationRunning, frameRate: panel.fractal.frameRate, pauseReason: panel.pauseReason,
         ready: panel.fractal.ready, shaderFailed: panel.fractal.shaderFailed})
     }
-    return JSON.stringify({name: "Filigree", version: "3.4.0", paused: paused, idle: idleMonitor.isIdle,
+    return JSON.stringify({name: "Filigree", version: "3.5.0", paused: paused, idle: idleMonitor.isIdle,
       motion: motion, speed: speed, intensity: intensity, zoom: zoom, colorCycle: colorCycle,
       zoomLoop: zoom > 0 ? zoomLoop.mode : "off",
       fps: fps, wire: wire, detail: detail, maxDimension: maxDimension,
@@ -814,6 +814,7 @@ Item {
         loopSteps: root.zoomLoop.steps
         loopEntry: root.zoomLoop.entry
         dissolve: root.zoomLoop.dissolve
+        descent: root.zoomLoop.mode === "descent"
         reference: root.zoomLoop.reference
         referenceX: root.zoomLoop.x
         referenceY: root.zoomLoop.y
