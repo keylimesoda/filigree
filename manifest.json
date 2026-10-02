@@ -11,8 +11,8 @@
   ],
   "keepLoaded": true,
   "entryPoints": {
-    "service": "Background.qml",
-    "panel": "FiligreeStudio.qml"
+    "service": "plugin/Background.qml",
+    "panel": "plugin/FiligreeStudio.qml"
   },
   "omarchy": {
     "clonedFrom": "omarchy.background"

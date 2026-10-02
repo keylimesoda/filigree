@@ -32,8 +32,9 @@ instead of crawling.
 
 ## Layout
 
+- `manifest.json` — the root manifest used by `omarchy plugin add` and validation.
 - `plugin/` — the Omarchy plugin: QML (background, fractal renderer, studio),
-  GLSL shaders + prebuilt `.qsb` files, the `omarchy-fractal` CLI, and the
+  GLSL shaders + prebuilt `.qsb` files, the `fractal` CLI, and the
   user-facing `plugin/README.md`.
 - `HANDOFF.md` — engineering log: architecture notes, calibration history,
   and the measured costs/benefits of each feature.
@@ -70,29 +71,22 @@ instead of crawling.
 ## Installing
 
 ```sh
-# 1. Get the plugin into your Omarchy plugin directory
-rsync -a --exclude Background.v1.qml plugin/ ~/.config/omarchy/plugins/ric.background/
-
-# 2. (Only if you edit shaders) rebuild the compiled shaders
-plugin/build-shaders
-
-# 3. Restart the shell so it picks the plugin up
-omarchy restart shell
+omarchy plugin add https://github.com/keylimesoda/filigree
 ```
 
 Then open the Filigree studio (the plugin's bar entry) or drive it from a
-terminal:
+terminal. The CLI is not automatically added to `PATH`; use its installed path:
 
 ```sh
-omarchy-fractal --help      # every setting, its range and default
-omarchy-fractal set wire 1.5
-omarchy-fractal set detail 3
-omarchy-fractal status
+~/.config/omarchy/plugins/ric.background/plugin/fractal --help
+~/.config/omarchy/plugins/ric.background/plugin/fractal set wire 1.5
+~/.config/omarchy/plugins/ric.background/plugin/fractal set detail 3
+~/.config/omarchy/plugins/ric.background/plugin/fractal status
 ```
 
 ## Requirements
 
 - Omarchy (Hyprland + the Omarchy shell, Quickshell ≥ 0.3)
 - The shader binaries checked in are built with
-  `qsb '150,300 es'`; re-run `plugin/build-shaders` to rebuild from the
-  `.frag` sources.
+  `qsb '150,300 es'`; from the repository root, re-run
+  `plugin/build-shaders` to rebuild from the `.frag` sources during development.

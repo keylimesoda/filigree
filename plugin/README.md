@@ -20,6 +20,16 @@ Filigree runs as the native `ric.background` shell plugin, cloned from
 process. Each display gets a composition fitted to its aspect ratio, including
 portrait screens.
 
+Install from the repository root with
+`omarchy plugin add https://github.com/keylimesoda/filigree`. The CLI is
+installed at `~/.config/omarchy/plugins/ric.background/plugin/fractal`, not
+automatically on `PATH`. The `omarchy-fractal` examples below assume you first
+set an interactive shell alias:
+
+```bash
+alias omarchy-fractal="$HOME/.config/omarchy/plugins/ric.background/plugin/fractal"
+```
+
 ## Switching it on
 
 Filigree is not an entry in Omarchy's background picker: it replaces the
@@ -58,7 +68,7 @@ add this line inside the outer braces of
 save):
 
 ```jsonc
-"style.filigree": {"icon":"󰜗","label":"Filigree","aliases":["filigree","fractal"],"description":"Fractal wallpaper studio","when":"[[ -x ~/.config/omarchy/plugins/ric.background/fractal ]]","action":"~/.config/omarchy/plugins/ric.background/fractal settings"}
+"style.filigree": {"icon":"󰜗","label":"Filigree","aliases":["filigree","fractal"],"description":"Fractal wallpaper studio","when":"[[ -x ~/.config/omarchy/plugins/ric.background/plugin/fractal ]]","action":"~/.config/omarchy/plugins/ric.background/plugin/fractal settings"}
 ```
 
 The studio then opens from **Style → Filigree** in the Omarchy menu
@@ -339,14 +349,17 @@ This re-enables `omarchy.background` (the standard renderer).
 
 ## Development
 
-Rebuild the baked shaders after editing `*.frag`:
+From the repository root, rebuild the baked shaders after editing `plugin/*.frag`:
 
 ```bash
-./build-shaders
-omarchy restart shell
+plugin/build-shaders
 ```
 
-Validate the plugin against Omarchy's manifest schema:
+This updates the checkout, not an installed copy. After updating the installed
+plugin with the rebuilt shaders, run `omarchy restart shell` to load them.
+
+Validate the root manifest against Omarchy's manifest schema from the
+repository root:
 
 ```bash
 omarchy plugin validate .
